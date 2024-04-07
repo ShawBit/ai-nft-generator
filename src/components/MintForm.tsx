@@ -2,6 +2,9 @@
 import Image from 'next/image';
 import { Blob, NFTStorage } from 'nft.storage';
 import { FormEvent, useState } from 'react';
+import { useReadContract, useSendTransaction, useWriteContract } from 'wagmi';
+
+import NFT from '@/abis/NFT.json';
 
 export function MintForm() {
   const [name, setName] = useState('');
@@ -9,10 +12,22 @@ export function MintForm() {
   const [image, setImage] = useState('');
   const [nftUrl, setNFTUrl] = useState('');
 
+  const { writeContract } = useWriteContract();
+  const { sendTransaction } = useSendTransaction();
+
+  const totalSupply = useReadContract({
+    abi: NFT.abi,
+    address: '0xa18e1afe9508c0db7d6d82fbed1f9b5986f3a2a8',
+    functionName: 'totalSupply',
+  });
+
   const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const image = await createImage();
-    uploadImage(image);
+    const url = await uploadImage(image);
+    await mintImage(url);
+
+    console.log('Success!');
   };
 
   const modelUrl = 'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1';
@@ -49,6 +64,17 @@ export function MintForm() {
     setNFTUrl(url);
 
     return url;
+  };
+
+  const mintImage = async (tokenURL: string) => {
+    console.log('Waiting for mint...');
+
+    writeContract({
+      abi: NFT.abi,
+      address: '0xa18e1afe9508c0db7d6d82fbed1f9b5986f3a2a8',
+      args: [tokenURL],
+      functionName: 'mint',
+    });
   };
 
   return (
