@@ -1,6 +1,5 @@
 import { ContextProvider } from '@/components/ContextProvider';
 import Navigation from '@/components/Navigation';
-import '@rainbow-me/rainbowkit/styles.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
