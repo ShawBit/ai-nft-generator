@@ -1,13 +1,32 @@
 'use client';
+import NFT from '@/abis/NFT.json';
+import config from '@/abis/config.json';
+import { ethers } from 'ethers';
 import Image from 'next/image';
 import { Blob, NFTStorage } from 'nft.storage';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
+import Navigation from './Navigation';
 
 export function MintForm() {
+  const [provider, setProvider] = useState<ethers.BrowserProvider>();
+  const [account, setAccount] = useState('');
+  const [nft, setNFT] = useState<ethers.Contract>();
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState('');
   const [nftUrl, setNFTUrl] = useState('');
+
+  const loadBlockchainData = async () => {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    setProvider(provider);
+
+    const network = await provider.getNetwork();
+
+    // todo  Need to change config index
+    const nft = new ethers.Contract(config[network.chainId.toString() as '11155111'].nft.address, NFT.abi, provider);
+    setNFT(nft);
+  };
 
   const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -56,10 +75,17 @@ export function MintForm() {
 
   const mintImage = async (tokenURL: string) => {
     console.log('Waiting for mint...');
+    const signer = provider?.getSigner() as Promise<ethers.JsonRpcSigner>;
+    const transaction = nft?.connect(await signer).mint(tokenURL, { value: ethers.parseUnits('1', 'ether') });
   };
+
+  useEffect(() => {
+    loadBlockchainData();
+  }, []);
 
   return (
     <div>
+      <Navigation account={account} setAccount={setAccount} />
       <div className="flex justify-center items-center min-h-[600px]">
         <form className="flex flex-col items-start justify-center mx-[25px] my-0" onSubmit={submitHandler}>
           <input
