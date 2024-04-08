@@ -76,7 +76,8 @@ export function MintForm() {
   const mintImage = async (tokenURL: string) => {
     console.log('Waiting for mint...');
     const signer = provider?.getSigner() as Promise<ethers.JsonRpcSigner>;
-    const transaction = nft?.connect(await signer).mint(tokenURL, { value: ethers.parseUnits('1', 'ether') });
+    const tx = await nft?.connect(await signer).mint(tokenURL, { value: ethers.parseUnits('0.01', 'ether') });
+    await tx.wait();
   };
 
   useEffect(() => {
