@@ -12,6 +12,8 @@ export function MintForm() {
   const [account, setAccount] = useState('');
   const [nft, setNFT] = useState<ethers.Contract>();
 
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [message, setMessage] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState('');
@@ -30,17 +32,22 @@ export function MintForm() {
 
   const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (name === '' && description === '') {
+      window.alert('Please type the name and description!');
+      return;
+    }
+    setIsWaiting(true);
     const image = await createImage();
     const url = await uploadImage(image);
     await mintImage(url);
-
-    console.log('Success!');
+    setIsWaiting(false);
+    setMessage('');
   };
 
   const modelUrl = 'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1';
 
   const createImage = async () => {
-    console.log('Generated Iamge...');
+    setMessage('Generated Image...');
     const response = await fetch(modelUrl, {
       method: 'POST',
       headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_HUGGING_FACE_API_KEY}` },
@@ -54,7 +61,7 @@ export function MintForm() {
   };
 
   const uploadImage = async (image: Blob) => {
-    console.log('Uploading image...');
+    setMessage('Uploading Image...');
     // Create instance to NFT.Storage
     const nftStorage = new NFTStorage({ token: `${process.env.NEXT_PUBLIC_NFT_STORAGE_API_KEY}` });
 
@@ -74,7 +81,7 @@ export function MintForm() {
   };
 
   const mintImage = async (tokenURL: string) => {
-    console.log('Waiting for mint...');
+    setMessage('Waiting for mint...');
     const signer = provider?.getSigner() as Promise<ethers.JsonRpcSigner>;
     const tx = await nft?.connect(await signer).mint(tokenURL, { value: ethers.parseUnits('0.01', 'ether') });
     await tx.wait();
@@ -112,15 +119,23 @@ export function MintForm() {
           />
         </form>
         <div className="flex justify-center items-center w-[512px] h-[512px] mx-[25px] my-0 border-[3px] border-solid border-[#0E76FD] rounded-[4px] overflow-hidden max-w-[90%]">
-          <Image className="rounded-[6px]" src={image} alt="Ai generated image" width="512" height="512" />
+          {!isWaiting && image ? (
+            <Image className="rounded-[6px]" src={image} alt="Ai generated image" width="512" height="512" />
+          ) : isWaiting ? (
+            <div>{message}</div>
+          ) : (
+            <div />
+          )}
         </div>
       </div>
-      <p className="flex justify-center items-center">
-        View&nbsp;
-        <a href={nftUrl} target="_blank" rel="noreferrer">
-          Metadata
-        </a>
-      </p>
+      {!isWaiting && nftUrl && (
+        <p>
+          View&nbsp;
+          <a href={nftUrl} target="_blank" rel="noreferrer">
+            Metadata
+          </a>
+        </p>
+      )}
     </div>
   );
 }
